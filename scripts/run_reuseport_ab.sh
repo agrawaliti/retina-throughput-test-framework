@@ -122,12 +122,11 @@ cleanup() {
 trap cleanup EXIT
 
 create_source_configmap() {
-  k -n "$NAMESPACE" delete configmap "$SRC_CONFIGMAP" --ignore-not-found >/dev/null 2>&1 || true
   k -n "$NAMESPACE" create configmap "$SRC_CONFIGMAP" \
     --from-file=go.mod=go.mod \
     --from-file=reuseport-receiver.go=cmd/reuseport-receiver/main.go \
     --from-file=reuseport-client.go=cmd/reuseport-client/main.go \
-    --dry-run=client -o yaml | k create -f - >/dev/null
+    --dry-run=client -o yaml | k apply -f - >/dev/null
 }
 
 deploy_server() {
@@ -190,6 +189,11 @@ set_retina_on_usr32() {
   fi
 
   k -n kube-system rollout status ds/retina-agent --timeout=300s >/dev/null
+
+  # Allow data-path hooks to settle before measuring the with-retina phase.
+  if [[ "$mode" != "off" ]]; then
+    sleep 15
+  fi
 }
 
 run_clients() {
@@ -198,6 +202,10 @@ run_clients() {
   local target_ip
   job_tag="${tag//_/-}"
   target_ip="$(k get pod "$SERVER_NAME" -o jsonpath='{.status.podIP}')"
+
+  # Avoid AlreadyExists from interrupted previous runs.
+  k delete "job/${CLIENT_JOB_PREFIX}-${job_tag}" --ignore-not-found >/dev/null 2>&1 || true
+
   create_source_configmap
   cat <<EOF | k create -f - >/dev/null
 apiVersion: batch/v1
