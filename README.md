@@ -1,202 +1,71 @@
-# iperf3 & Netperf Two-Node Benchmark Framework
+# Retina Throughput Test Framework
 
-This workspace provides a reproducible benchmark harness for measuring both **throughput** (iperf3) and **latency** (netperf) on your cluster:
+A reproducible benchmark harness for measuring network throughput and latency using **iperf3** and **netperf**. Includes support for Retina network telemetry and ring buffer analysis.
 
-- Receiver node: `vmss000000` (runs iperf3 server + netperf server; instrumented node)
-- Sender node: `vmss000001` (runs iperf3 client + netperf client)
+## Features
 
-## Testbed Profile
+### Throughput Testing (iperf3)
+- Bandwidth shaping with configurable target rates
+- Parallel flow fanout for multi-core testing
+- Retransmit tracking and analysis
+- Optional telemetry capture (softirqs, interrupts, ethtool stats)
+- Performance profiling with `perf` and flamegraph support
 
-- SKU: identical on both nodes
-- CPU: 160 vCPUs (AMD EPYC 9V74)
-- NUMA: 5 nodes x 32 CPUs
-- L3 cache: 640 MB
-- NIC: 100 Gbps Mellanox `mlx5`, 31 RX queues
+### Latency Testing (netperf)
+- TCP request-response (TCP_RR) benchmarks
+- Percentile latency reporting (P50, P90, P99)
+- Multi-flow parallel testing
+- Throughput/latency correlation analysis
 
-## What This Framework Covers
+### Retransmit Analysis
+- Detect TCP retransmit thresholds
+- Identify NIC queue saturation points
+- Per-CPU network capacity measurements
 
-### iperf3: Throughput Testing
-- Bandwidth shaping (`-b`) for fixed target rates
-- Parallel flow fanout (`-P`) to spread flows across RSS queues
-- Write buffer tuning (`-l`) to affect packet rate and GRO behavior
-- Duration control (`-t`)
-- **Retransmit tracking** from iperf3 JSON output
-- Optional receiver telemetry snapshots (`/proc/softirqs`, `/proc/interrupts`, `ethtool`)
-- Optional `perf record` capture with `perf script` and flamegraph output
-- Optional `bpftool` snapshots of loaded programs, maps, links, and net attachments
+## Quick Start
 
-### Retransmit Threshold Analysis
-- Find the throughput where TCP retransmits begin (NIC queue saturation)
-- Measure per-CPU network capacity ceiling
-- Compare against baseline (provided reference data)
-- Single-flow bandwidth sweep from 5–30 Gbps
-- Enhanced telemetry on VMs for packet-level visibility
-
-### netperf: Latency Testing (Request-Response RTT)
-- TCP_RR mode: measures round-trip latency of small request-response exchanges
-- Configurable request/response sizes
-- Reports percentile latencies (P50, P90, P99) + transactions per second
-- Multi-flow parallel testing to see contention effects
-- Complementary to iperf3: shows latency under load, tail latency behavior
-
-## Files
-
-### iperf3 (Throughput)
-- `scripts/start_server.sh`: Start iperf3 server on receiver
-- `scripts/run_client_once.sh`: Run one test and log JSON + CSV summary
-- `scripts/run_sweep.sh`: Execute a scenario matrix from CSV
-- `scripts/capture_receiver_telemetry.sh`: Capture receiver-side telemetry snapshots
-- `scenarios/tcp_sweep.csv`: Example TCP throughput test matrix (multi-flow)
-- `scenarios/single_flow_ceiling.csv`: Single-flow bandwidth sweep (per-queue CPU ceiling)
-
-### netperf (Latency)
-- `scripts/start_netperf_server.sh`: Start netperf server on receiver
-- `scripts/run_netperf_once.sh`: Run one latency test and log results
-- `scripts/run_netperf_sweep.sh`: Execute a latency scenario matrix from CSV
-- `scenarios/netperf_sweep.csv`: Example TCP_RR latency test matrix
-
-### Documentation
-- `README.md`: This file
-- `HARDWARE_NOTES.md`: Hardware profile and implications
-- `NETPERF_README.md`: Detailed netperf guide + latency analysis
-- `SINGLE_FLOW_README.md`: Single-flow CPU ceiling testing + per-queue analysis
-- `docs/ringbuf-capture.md`: Retina ring buffer benchmark + CPU flamegraph capture guide
-
-## Prerequisites
-
-Install at minimum:
+### Prerequisites
 
 ```bash
 sudo apt-get update
-sudo apt-get install -y iperf3 netperf ethtool jq numactl
+sudo apt-get install -y iperf3 netperf ethtool jq
 ```
 
-- `iperf3`: throughput testing
-- `netperf`: latency testing (includes `netperf` and `netserver`)
-- `jq`: optional, for automatic result extraction
+### Basic Usage
 
-## Retina Three-Mode Repro (Baseline vs Perf-Array vs Ringbuf)
+1. **Start receiver (server node)**
+   ```bash
+   chmod +x scripts/*.sh
+   ./scripts/start_server.sh --port 5201
+   ```
 
-Use this when you want a single command that anyone can run to reproduce and compare:
-- Baseline (Retina excluded)
-- Perf-array mode (Retina on, `packetParserRingBuffer: disabled`)
-- Ringbuf mode (Retina on, `packetParserRingBuffer: enabled`)
+2. **Run client test (client node)**
+   ```bash
+   ./scripts/run_client_once.sh \
+     --server-ip <RECEIVER_IP> \
+     --port 5201 \
+     --bandwidth 50000M \
+     --parallel 8 \
+     --duration 30
+   ```
 
-### One Command
+3. **Run scenario sweep**
+   ```bash
+   ./scripts/run_sweep.sh --server-ip <RECEIVER_IP> --scenario scenarios/tcp_sweep.csv
+   ```
 
-```bash
-cd /home/itiagrawal/Projects/iperf3-test
-./scripts/run_reuseport_three_modes.sh \
-  --client-pods 4 \
-  --connections-per-pod 8 \
-  --duration 10s \
-  --listeners 16 \
-  --workers 64
-```
+## Documentation
 
-### What it does concretely
+- [Overview](docs/00-overview.md) - Framework architecture and concepts
+- [Single Flow Ceiling Analysis](docs/01-single-flow-ceiling.md) - Per-CPU throughput limits
+- [Retransmit Analysis](docs/02-binary-search-retransmit-onset.md) - Queue saturation detection
+- [Retina Observability](docs/04-retina-observability.md) - Ring buffer and telemetry capture
+- [Netperf Guide](NETPERF_README.md) - Latency testing details
+- [Hardware Notes](HARDWARE_NOTES.md) - System configuration reference
 
-1. Forces Retina DaemonSet scheduling via `perf-test-retina=enabled` label.
-2. Sets `packetParserRingBuffer: disabled`, restarts Retina, runs `run_reuseport_ab.sh`.
-3. Sets `packetParserRingBuffer: enabled`, restarts Retina, runs `run_reuseport_ab.sh` again.
-4. Produces a single consolidated comparison in text, CSV, and JSON.
+## Results
 
-### Ringbuf Capture Run
-
-If you want the ringbuf pass plus receiver-side capture artifacts in one command, use:
-
-```bash
-cd /home/itiagrawal/Projects/iperf3-test
-./scripts/run_ringbuf_capture.sh \
-  --nic <NIC_NAME> \
-  --client-pods 4 \
-  --connections-per-pod 8 \
-  --duration 10s \
-  --listeners 16 \
-  --workers 64 \
-  --capture-duration 30 \
-  --capture-interval 1
-```
-
-That command runs the ringbuf benchmark and then captures:
-- `perf.data`
-- `perf.script.txt`
-- `flamegraph.svg` when flamegraph tools are available
-- `bpftool` snapshots of `prog`, `map`, `link`, and `net`
-
-Results are written under `results/ringbuf_capture/<RUN_ID>/`.
-
-### Output artifacts
-
-Each run creates a timestamped directory:
-
-```text
-results/reuseport_three_modes/<RUN_ID>/
-  perf_array/
-  ringbuf/
-  three_mode_summary.txt
-  three_mode_summary.csv
-  three_mode_summary.json
-```
-
-The CSV is easy to share/plot and has exactly the three modes:
-
-```csv
-mode,baseline_gbps,retina_gbps,drop_vs_canonical_baseline_pct
-baseline,15.20,15.20,0.0
-perf-array,15.20,8.21,46.0
-ringbuf,15.20,14.93,1.8
-```
-
-Note: `baseline_gbps` is pinned to the perf-array pass baseline as the canonical baseline for side-by-side comparison.
-
-## 1) Start Receiver Server (vmss000000)
-
-```bash
-cd /home/itiagrawal/Projects/iperf3-test
-chmod +x scripts/*.sh
-./scripts/start_server.sh --port 5201
-```
-
-Optional one-shot mode:
-
-```bash
-./scripts/start_server.sh --port 5201 --one-off
-```
-
-## 2) Run a Single Client Test (vmss000001)
-
-```bash
-cd /home/itiagrawal/Projects/iperf3-test
-./scripts/run_client_once.sh \
-  --server-ip <RECEIVER_IP> \
-  --port 5201 \
-  --test-name p31_b80g_l128k_t30 \
-  --bandwidth 80000M \
-  --parallel 31 \
-  --length 128K \
-  --duration 30 \
-  --protocol tcp
-```
-
-Outputs:
-
-- JSON: `results/client/<timestamp>_<test_name>.json`
-- Summary CSV: `results/client/summary.csv`
-
-## 3) Run a Multi-Flow Sweep (vmss000001)
-
-Edit `scenarios/tcp_sweep.csv` to define your matrix, then run:
-
-```bash
-./scripts/run_sweep.sh --server-ip <RECEIVER_IP> --scenario scenarios/tcp_sweep.csv
-```
-
-CSV columns are:
-
-```text
-test_name,bandwidth,parallel,length,duration,protocol
-```
+Test results are timestamped and stored in the `results/` directory with JSON and CSV formats for easy analysis and plotting.
 
 ## 3b) Run a Single-Flow Ceiling Test (vmss000001)
 
