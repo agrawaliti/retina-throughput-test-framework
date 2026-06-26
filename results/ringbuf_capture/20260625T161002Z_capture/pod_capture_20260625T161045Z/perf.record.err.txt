@@ -1,0 +1,2 @@
+[ perf record: Woken up 33 times to write data ]
+[ perf record: Captured and wrote 13.387 MB /tmp/ringbuf-perf-20260625T161045Z.data (95057 samples) ]

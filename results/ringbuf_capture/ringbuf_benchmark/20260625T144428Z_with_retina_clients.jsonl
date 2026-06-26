@@ -1,0 +1,4 @@
+{"target":"10.224.0.62:9000","connections":8,"duration_seconds":10,"payload_bytes":65536,"bytes_sent":3998613504,"bits_per_second":3197512448.3113937,"connect_errors":0,"write_errors":0,"gomaxprocs":32,"timestamp_utc":"2026-06-25T14:46:10Z"}
+{"target":"10.224.0.62:9000","connections":8,"duration_seconds":10,"payload_bytes":65536,"bytes_sent":5167448064,"bits_per_second":4133148278.087567,"connect_errors":0,"write_errors":0,"gomaxprocs":32,"timestamp_utc":"2026-06-25T14:46:11Z"}
+{"target":"10.224.0.62:9000","connections":8,"duration_seconds":10,"payload_bytes":65536,"bytes_sent":4407361536,"bits_per_second":3525023029.1210814,"connect_errors":0,"write_errors":0,"gomaxprocs":32,"timestamp_utc":"2026-06-25T14:46:10Z"}
+{"target":"10.224.0.62:9000","connections":8,"duration_seconds":10,"payload_bytes":65536,"bytes_sent":4986961920,"bits_per_second":3988758707.5119505,"connect_errors":0,"write_errors":0,"gomaxprocs":32,"timestamp_utc":"2026-06-25T14:46:11Z"}

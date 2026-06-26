@@ -1,0 +1,25 @@
+Starting ringbuf benchmark and capture run: 20260625T145011Z
+1/2: starting perf + bpftool telemetry capture
+2/2: running ringbuf benchmark
+run_id=20260625T145013Z
+baseline_json={
+  "tag": "baseline",
+  "pods": 4,
+  "total_bits_per_second": 15517685116.145903,
+  "total_gbps": 15.517685116145902,
+  "total_bytes_sent": 19402719232,
+  "total_connect_errors": 0,
+  "total_write_errors": 0
+}
+with_retina_json={
+  "tag": "with_retina",
+  "pods": 4,
+  "total_bits_per_second": 15446971818.596905,
+  "total_gbps": 15.446971818596905,
+  "total_bytes_sent": 19313983488,
+  "total_connect_errors": 0,
+  "total_write_errors": 0
+}
+baseline_gbps=15.52
+with_retina_gbps=15.45
+overhead_pct=0.5

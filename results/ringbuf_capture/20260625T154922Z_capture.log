@@ -1,0 +1,16 @@
+=== capture starting ===
+perf (via chroot): /usr/lib/linux-tools/5.15.0-1114-azure/perf
+bpftool (via chroot): /usr/sbin/bpftool
+0 added, 0 removed; done.
+Running hooks in /etc/ca-certificates/update.d...
+done.
+stackcollapse-perf.pl: /usr/local/bin/stackcollapse-perf.pl
+flamegraph.pl: /usr/local/bin/flamegraph.pl
+starting perf record (30s) ...
+waiting for perf to finish ...
+perf exit code: 1
+WARNING: perf.data missing or empty
+WARNING: skipping flamegraph (tools missing or perf.script.txt missing)
+copying results to host ...
+leaving pod alive briefly for kubectl cp ...
+=== capture complete: /host-capture/20260625T155007Z ===

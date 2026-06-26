@@ -1,0 +1,19 @@
+=== capture starting ===
+ERROR: perf binary not found under /host-perf-tools (kernel=5.15.0-1114-azure)
+/host-perf-tools/:
+total 4
+drwxr-xr-x 2 root root 4096 Jun  8 15:24 5.15.0-1114-azure
+
+/host-perf-tools/5.15.0-1114-azure:
+total 0
+lrwxrwxrwx 1 root root 43 May 26 08:55 bpftool -> ../../linux-azure-tools-5.15.0-1114/bpftool
+lrwxrwxrwx 1 root root 44 May 26 08:55 cpupower -> ../../linux-azure-tools-5.15.0-1114/cpupower
+lrwxrwxrwx 1 root root 51 May 26 08:55 hv_fcopy_daemon -> ../../linux-azure-tools-5.15.0-1114/hv_fcopy_daemon
+lrwxrwxrwx 1 root root 49 May 26 08:55 hv_kvp_daemon -> ../../linux-azure-tools-5.15.0-1114/hv_kvp_daemon
+lrwxrwxrwx 1 root root 49 May 26 08:55 hv_vss_daemon -> ../../linux-azure-tools-5.15.0-1114/hv_vss_daemon
+lrwxrwxrwx 1 root root 43 May 26 08:55 lsvmbus -> ../../linux-azure-tools-5.15.0-1114/lsvmbus
+lrwxrwxrwx 1 root root 40 May 26 08:55 perf -> ../../linux-azure-tools-5.15.0-1114/perf
+lrwxrwxrwx 1 root root 45 May 26 08:55 turbostat -> ../../linux-azure-tools-5.15.0-1114/turbostat
+lrwxrwxrwx 1 root root 41 May 26 08:55 usbip -> ../../linux-azure-tools-5.15.0-1114/usbip
+lrwxrwxrwx 1 root root 42 May 26 08:55 usbipd -> ../../linux-azure-tools-5.15.0-1114/usbipd
+lrwxrwxrwx 1 root root 58 May 26 08:55 x86_energy_perf_policy -> ../../linux-azure-tools-5.15.0-1114/x86_energy_perf_policy

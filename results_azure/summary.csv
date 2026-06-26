@@ -1,0 +1,7 @@
+timestamp,test_name,sender_host,server_ip,port,protocol,bandwidth,parallel,length,duration_s,throughput_gbps,retransmits,sender_cpu_pct,receiver_cpu_pct,json_file
+2026-06-24T14:14:43Z,p01_b05g,iperf3-sender,10.0.1.5,5201,tcp,5000M,1,64K,30,5.000,12860,101.00502212764486,30.305328310914938,/home/azureuser/iperf3-test/results/retransmit_analysis/20260624T141413Z_p01_b05g.json
+2026-06-24T14:15:13Z,p01_b10g,iperf3-sender,10.0.1.5,5201,tcp,10000M,1,64K,30,10.000,23726,81.614827486147874,56.223750537063822,/home/azureuser/iperf3-test/results/retransmit_analysis/20260624T141443Z_p01_b10g.json
+2026-06-24T14:15:43Z,p01_b15g,iperf3-sender,10.0.1.5,5201,tcp,15000M,1,64K,30,14.344,20984,43.714791323060176,81.2660760750671,/home/azureuser/iperf3-test/results/retransmit_analysis/20260624T141513Z_p01_b15g.json
+2026-06-24T14:16:13Z,p01_b20g,iperf3-sender,10.0.1.5,5201,tcp,20000M,1,64K,30,12.862,20481,39.07263393416,73.813929377544667,/home/azureuser/iperf3-test/results/retransmit_analysis/20260624T141543Z_p01_b20g.json
+2026-06-24T14:16:43Z,p01_b25g,iperf3-sender,10.0.1.5,5201,tcp,25000M,1,64K,30,13.871,26398,40.9544069692377,75.028474911695355,/home/azureuser/iperf3-test/results/retransmit_analysis/20260624T141613Z_p01_b25g.json
+2026-06-24T14:17:13Z,p01_b30g,iperf3-sender,10.0.1.5,5201,tcp,30000M,1,64K,30,13.267,19537,42.029975935180637,76.0299866156179,/home/azureuser/iperf3-test/results/retransmit_analysis/20260624T141643Z_p01_b30g.json

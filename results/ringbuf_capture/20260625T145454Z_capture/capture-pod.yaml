@@ -1,0 +1,81 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: ringbuf-capture-20260625t145454z
+  namespace: default
+spec:
+  restartPolicy: Never
+  nodeSelector:
+    kubernetes.io/hostname: aks-usr32-25342902-vmss000000
+  containers:
+  - name: capture
+    image: ubuntu:22.04
+    securityContext:
+      privileged: true
+    command: ["/bin/bash", "-lc"]
+    args:
+      - >-
+        set -euo pipefail;
+        export DEBIAN_FRONTEND=noninteractive;
+        apt-get update >/dev/null && apt-get install -y --no-install-recommends linux-tools-common linux-tools-generic linux-tools-6.18.33.1-microsoft-standard-WSL2 bpftool perl >/dev/null;
+        PERF_BIN=$(command -v perf || true);
+        BPFTOOL_BIN=$(command -v bpftool || true);
+        if [[ -z "$PERF_BIN" ]]; then
+          PERF_BIN=$(find /usr /usr/lib -type f -name perf 2>/dev/null | head -n1 || true);
+        fi;
+        if [[ -z "$BPFTOOL_BIN" ]]; then
+          BPFTOOL_BIN=$(find /usr /usr/sbin -type f -name bpftool 2>/dev/null | head -n1 || true);
+        fi;
+        if [[ -z "$PERF_BIN" || -z "$BPFTOOL_BIN" ]]; then
+          echo 'required tools not found after install' >&2;
+          exit 127;
+        fi;
+        mkdir -p /capture;
+        TS=$(date -u +%Y%m%dT%H%M%SZ);
+        RUN_DIR=/capture/$TS;
+        mkdir -p "$RUN_DIR";
+        echo capture_tag=ringbuf > "$RUN_DIR/meta.env";
+        echo node=aks-usr32-25342902-vmss000000 >> "$RUN_DIR/meta.env";
+        echo nic=enP40153s1 >> "$RUN_DIR/meta.env";
+        cat /proc/softirqs > "$RUN_DIR/softirqs.before.txt";
+        cat /proc/interrupts > "$RUN_DIR/interrupts.before.txt";
+        "$BPFTOOL_BIN" prog show > "$RUN_DIR/bpftool.prog.before.txt" 2>&1 || true;
+        "$BPFTOOL_BIN" map show > "$RUN_DIR/bpftool.map.before.txt" 2>&1 || true;
+        "$BPFTOOL_BIN" link show > "$RUN_DIR/bpftool.link.before.txt" 2>&1 || true;
+        "$BPFTOOL_BIN" net show > "$RUN_DIR/bpftool.net.before.txt" 2>&1 || true;
+        "$PERF_BIN" record -a -g --call-graph dwarf -F 99 -o "$RUN_DIR/perf.data" -- sleep 30 >/dev/null 2>&1 &
+        PERF_PID=$!;
+        printf '%s\n' 'timestamp,net_rx_total,net_tx_total' > "$RUN_DIR/samples.csv";
+        END_TIME=$((SECONDS + 30));
+        while [[ $SECONDS -lt $END_TIME ]]; do
+          NOW=$(date -u +%Y-%m-%dT%H:%M:%SZ);
+          NET_RX_TOTAL=$(awk '/NET_RX/ {sum=0; for (i=2; i<=NF; i++) sum+=$i; print sum}' /proc/softirqs);
+          NET_TX_TOTAL=$(awk '/NET_TX/ {sum=0; for (i=2; i<=NF; i++) sum+=$i; print sum}' /proc/softirqs);
+          printf '%s,%s,%s\n' "$NOW" "$NET_RX_TOTAL" "$NET_TX_TOTAL" >> "$RUN_DIR/samples.csv";
+          sleep 1;
+        done;
+        wait "$PERF_PID";
+        "$PERF_BIN" script -i "$RUN_DIR/perf.data" > "$RUN_DIR/perf.script.txt";
+        if command -v stackcollapse-perf.pl >/dev/null 2>&1 && command -v flamegraph.pl >/dev/null 2>&1; then
+          stackcollapse-perf.pl < "$RUN_DIR/perf.script.txt" > "$RUN_DIR/perf.folded.txt";
+          flamegraph.pl "$RUN_DIR/perf.folded.txt" > "$RUN_DIR/flamegraph.svg";
+        fi;
+        "$BPFTOOL_BIN" prog show > "$RUN_DIR/bpftool.prog.after.txt" 2>&1 || true;
+        "$BPFTOOL_BIN" map show > "$RUN_DIR/bpftool.map.after.txt" 2>&1 || true;
+        "$BPFTOOL_BIN" link show > "$RUN_DIR/bpftool.link.after.txt" 2>&1 || true;
+        "$BPFTOOL_BIN" net show > "$RUN_DIR/bpftool.net.after.txt" 2>&1 || true;
+        cat /proc/softirqs > "$RUN_DIR/softirqs.after.txt";
+        cat /proc/interrupts > "$RUN_DIR/interrupts.after.txt";
+        cp -R /capture/$TS /host-capture 2>/dev/null || true;
+    volumeMounts:
+    - name: capture
+      mountPath: /capture
+    - name: host-capture
+      mountPath: /host-capture
+  volumes:
+  - name: capture
+    emptyDir: {}
+  - name: host-capture
+    hostPath:
+      path: /home/itiagrawal/Projects/iperf3-test/results/ringbuf_capture/20260625T145454Z_capture
+      type: DirectoryOrCreate

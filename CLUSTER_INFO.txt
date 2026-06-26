@@ -1,0 +1,28 @@
+# iperf3 Benchmark Cluster
+# Deployed: Wed Jun 24 14:02:36 UTC 2026
+
+## Resource Group
+iperf3-rg
+
+## Receiver Node (iperf3 server)
+RECEIVER_HOST=iperf3-receiver
+RECEIVER_PUBLIC_IP=4.246.81.107
+RECEIVER_PRIVATE_IP=10.0.1.5
+
+## Sender Node (iperf3 client)
+SENDER_HOST=iperf3-sender
+SENDER_PUBLIC_IP=4.155.169.153
+SENDER_PRIVATE_IP=10.0.1.4
+
+## Quick Connection Commands
+# SSH to receiver (via public IP)
+ssh azureuser@4.246.81.107
+
+# SSH to sender (via public IP)
+ssh azureuser@4.155.169.153
+
+# Start iperf3 server on receiver
+ssh azureuser@4.246.81.107 "iperf3 -s -p 5201"
+
+# Run single test from sender to receiver (via private IP)
+ssh azureuser@4.155.169.153 "iperf3 -c 10.0.1.5 -p 5201 -P 8 -l 128K -t 30 --json"

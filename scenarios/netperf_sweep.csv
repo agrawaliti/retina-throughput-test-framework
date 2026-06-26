@@ -1,0 +1,11 @@
+test_name,port,req_size,resp_size,num_trans,parallel
+rr_single_1b,12865,1,1,10000,1
+rr_single_64b,12865,64,64,10000,1
+rr_single_256b,12865,256,256,10000,1
+rr_single_1kb,12865,1024,1024,10000,1
+rr_parallel2_1b,12865,1,1,10000,2
+rr_parallel4_1b,12865,1,1,10000,4
+rr_parallel8_1b,12865,1,1,10000,8
+rr_parallel16_1b,12865,1,1,10000,16
+rr_multiport_8x1b,12865,1,1,10000,8
+rr_multiport_16x1b,12865,1,1,10000,16

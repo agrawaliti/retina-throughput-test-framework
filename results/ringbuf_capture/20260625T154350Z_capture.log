@@ -1,0 +1,1 @@
+error: error from server (NotFound): pods "ringbuf-capture-20260625t154350z" not found in namespace "default"

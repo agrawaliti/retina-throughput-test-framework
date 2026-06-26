@@ -1,0 +1,265 @@
+209: cgroup_device  tag 531db05b114e9af3
+	loaded_at 2026-06-24T17:12:47+0000  uid 0
+	xlated 512B  jited 332B  memlock 4096B
+214: cgroup_device  tag 531db05b114e9af3
+	loaded_at 2026-06-24T17:12:47+0000  uid 0
+	xlated 512B  jited 332B  memlock 4096B
+225: cgroup_device  tag 531db05b114e9af3
+	loaded_at 2026-06-24T17:12:47+0000  uid 0
+	xlated 512B  jited 332B  memlock 4096B
+251: cgroup_device  tag 531db05b114e9af3
+	loaded_at 2026-06-24T17:12:48+0000  uid 0
+	xlated 512B  jited 332B  memlock 4096B
+270: cgroup_device  tag 3918c82a5f4c0360
+	loaded_at 2026-06-24T17:12:51+0000  uid 0
+	xlated 64B  jited 44B  memlock 4096B
+324: cgroup_device  tag 531db05b114e9af3
+	loaded_at 2026-06-24T17:12:53+0000  uid 0
+	xlated 512B  jited 332B  memlock 4096B
+347: cgroup_device  tag 531db05b114e9af3
+	loaded_at 2026-06-24T17:13:05+0000  uid 0
+	xlated 512B  jited 332B  memlock 4096B
+374: cgroup_device  tag 3918c82a5f4c0360
+	loaded_at 2026-06-24T17:14:16+0000  uid 0
+	xlated 64B  jited 44B  memlock 4096B
+379: cgroup_device  tag 531db05b114e9af3
+	loaded_at 2026-06-24T17:14:16+0000  uid 0
+	xlated 512B  jited 332B  memlock 4096B
+382: cgroup_device  tag 3918c82a5f4c0360
+	loaded_at 2026-06-24T17:14:16+0000  uid 0
+	xlated 64B  jited 44B  memlock 4096B
+387: cgroup_device  tag 531db05b114e9af3
+	loaded_at 2026-06-24T17:14:16+0000  uid 0
+	xlated 512B  jited 332B  memlock 4096B
+392: cgroup_device  tag 531db05b114e9af3
+	loaded_at 2026-06-24T17:14:16+0000  uid 0
+	xlated 512B  jited 332B  memlock 4096B
+397: cgroup_device  tag 531db05b114e9af3
+	loaded_at 2026-06-24T17:14:16+0000  uid 0
+	xlated 512B  jited 332B  memlock 4096B
+400: cgroup_device  tag 3918c82a5f4c0360
+	loaded_at 2026-06-24T17:14:16+0000  uid 0
+	xlated 64B  jited 44B  memlock 4096B
+407: cgroup_device  tag 531db05b114e9af3
+	loaded_at 2026-06-24T17:14:17+0000  uid 0
+	xlated 512B  jited 332B  memlock 4096B
+410: kprobe  name handle_udp_recv  tag 775aece7d843b6e0  gpl
+	loaded_at 2026-06-24T17:14:17+0000  uid 0
+	xlated 1440B  jited 831B  memlock 4096B  map_ids 94,88,95,89
+	btf_id 106
+411: kprobe  name handle_udp_recv  tag 7d4b9eb7b274cc74  gpl
+	loaded_at 2026-06-24T17:14:17+0000  uid 0
+	xlated 1472B  jited 877B  memlock 4096B  map_ids 88,94,97,90
+	btf_id 106
+412: kprobe  name handle_udp_send  tag 11749689d543d118  gpl
+	loaded_at 2026-06-24T17:14:17+0000  uid 0
+	xlated 2248B  jited 1328B  memlock 4096B  map_ids 94,97,90,95,89
+	btf_id 106
+413: kprobe  name handle_udpv6_se  tag 76458126007b19c7  gpl
+	loaded_at 2026-06-24T17:14:17+0000  uid 0
+	xlated 1336B  jited 802B  memlock 4096B  map_ids 94,97,90
+	btf_id 106
+414: kprobe  name handle_udpv6_re  tag bbcb935fa0866ed5  gpl
+	loaded_at 2026-06-24T17:14:17+0000  uid 0
+	xlated 504B  jited 306B  memlock 4096B  map_ids 94,88
+	btf_id 106
+415: kprobe  name handle_udpv6_re  tag 91f00c2e8a9f9c35  gpl
+	loaded_at 2026-06-24T17:14:17+0000  uid 0
+	xlated 1424B  jited 852B  memlock 4096B  map_ids 88,94,97,90
+	btf_id 106
+416: kprobe  name handle_tcp_acce  tag 09880ac90e3f2e28  gpl
+	loaded_at 2026-06-24T17:14:17+0000  uid 0
+	xlated 960B  jited 569B  memlock 4096B  map_ids 94,96,89
+	btf_id 106
+417: kprobe  name handle_tcp_conn  tag da5abb6da782a91c  gpl
+	loaded_at 2026-06-24T17:14:17+0000  uid 0
+	xlated 840B  jited 511B  memlock 4096B  map_ids 94,96,89
+	btf_id 106
+418: kprobe  name handle_tcp_set_  tag 50fbd28c0e3c4bcb  gpl
+	loaded_at 2026-06-24T17:14:17+0000  uid 0
+	xlated 1456B  jited 820B  memlock 4096B  map_ids 94,96,91,89
+	btf_id 106
+419: tracepoint  name handle_execve  tag e7a8c38f8b06bb32  gpl
+	loaded_at 2026-06-24T17:14:17+0000  uid 0
+	xlated 232B  jited 138B  memlock 4096B  map_ids 89
+	btf_id 106
+420: tracepoint  name handle_exit  tag 13e7ba066764888f  gpl
+	loaded_at 2026-06-24T17:14:17+0000  uid 0
+	xlated 280B  jited 170B  memlock 4096B  map_ids 89
+	btf_id 106
+421: kprobe  name handle_getaddri  tag 77cc3ef20eed8af2  gpl
+	loaded_at 2026-06-24T17:14:17+0000  uid 0
+	xlated 760B  jited 488B  memlock 4096B  map_ids 94,97,92
+	btf_id 106
+422: kprobe  name handle_getaddri  tag c5c6cd7f116f2b93  gpl
+	loaded_at 2026-06-24T17:14:17+0000  uid 0
+	xlated 15968B  jited 8154B  memlock 16384B  map_ids 92,90
+	btf_id 106
+428: cgroup_device  tag 531db05b114e9af3
+	loaded_at 2026-06-24T17:14:33+0000  uid 0
+	xlated 512B  jited 332B  memlock 4096B
+433: cgroup_device  tag 531db05b114e9af3
+	loaded_at 2026-06-24T17:14:36+0000  uid 0
+	xlated 512B  jited 332B  memlock 4096B
+639: cgroup_device  tag 531db05b114e9af3
+	loaded_at 2026-06-25T04:10:49+0000  uid 0
+	xlated 512B  jited 332B  memlock 4096B
+644: cgroup_device  tag 531db05b114e9af3
+	loaded_at 2026-06-25T04:10:49+0000  uid 0
+	xlated 512B  jited 332B  memlock 4096B
+649: cgroup_device  tag 531db05b114e9af3
+	loaded_at 2026-06-25T04:10:52+0000  uid 0
+	xlated 512B  jited 332B  memlock 4096B
+654: cgroup_device  tag 531db05b114e9af3
+	loaded_at 2026-06-25T04:10:52+0000  uid 0
+	xlated 512B  jited 332B  memlock 4096B
+659: cgroup_device  tag 531db05b114e9af3
+	loaded_at 2026-06-25T04:10:52+0000  uid 0
+	xlated 512B  jited 332B  memlock 4096B
+662: cgroup_device  tag 3918c82a5f4c0360
+	loaded_at 2026-06-25T04:10:52+0000  uid 0
+	xlated 64B  jited 44B  memlock 4096B
+667: cgroup_device  tag 531db05b114e9af3
+	loaded_at 2026-06-25T04:10:54+0000  uid 0
+	xlated 512B  jited 332B  memlock 4096B
+706: cgroup_device  tag 0ecd07b7b633809f  gpl
+	loaded_at 2026-06-25T04:10:57+0000  uid 0
+	xlated 496B  jited 311B  memlock 4096B
+707: cgroup_skb  tag 6deef7357e7b4530  gpl
+	loaded_at 2026-06-25T04:10:57+0000  uid 0
+	xlated 64B  jited 58B  memlock 4096B
+708: cgroup_skb  tag 6deef7357e7b4530  gpl
+	loaded_at 2026-06-25T04:10:57+0000  uid 0
+	xlated 64B  jited 58B  memlock 4096B
+709: cgroup_device  tag c8b47a902f1cc68b  gpl
+	loaded_at 2026-06-25T04:10:57+0000  uid 0
+	xlated 464B  jited 292B  memlock 4096B
+710: cgroup_device  tag c692d192a4d1a516  gpl
+	loaded_at 2026-06-25T04:10:57+0000  uid 0
+	xlated 440B  jited 275B  memlock 4096B
+711: cgroup_device  tag c692d192a4d1a516  gpl
+	loaded_at 2026-06-25T04:10:57+0000  uid 0
+	xlated 440B  jited 275B  memlock 4096B
+712: cgroup_device  tag c692d192a4d1a516  gpl
+	loaded_at 2026-06-25T04:10:57+0000  uid 0
+	xlated 440B  jited 275B  memlock 4096B
+713: cgroup_device  tag e3dbd137be8d6168  gpl
+	loaded_at 2026-06-25T04:10:57+0000  uid 0
+	xlated 504B  jited 313B  memlock 4096B
+714: cgroup_skb  tag 6deef7357e7b4530  gpl
+	loaded_at 2026-06-25T04:10:57+0000  uid 0
+	xlated 64B  jited 58B  memlock 4096B
+715: cgroup_skb  tag 6deef7357e7b4530  gpl
+	loaded_at 2026-06-25T04:10:57+0000  uid 0
+	xlated 64B  jited 58B  memlock 4096B
+716: cgroup_device  tag c692d192a4d1a516  gpl
+	loaded_at 2026-06-25T04:10:57+0000  uid 0
+	xlated 440B  jited 275B  memlock 4096B
+717: cgroup_device  tag 28a890580b33b0dc  gpl
+	loaded_at 2026-06-25T04:10:57+0000  uid 0
+	xlated 560B  jited 355B  memlock 4096B
+718: cgroup_device  tag c692d192a4d1a516  gpl
+	loaded_at 2026-06-25T04:10:57+0000  uid 0
+	xlated 440B  jited 275B  memlock 4096B
+719: cgroup_device  tag c692d192a4d1a516  gpl
+	loaded_at 2026-06-25T04:10:57+0000  uid 0
+	xlated 440B  jited 275B  memlock 4096B
+720: cgroup_device  tag c692d192a4d1a516  gpl
+	loaded_at 2026-06-25T04:10:57+0000  uid 0
+	xlated 440B  jited 275B  memlock 4096B
+721: cgroup_device  tag c692d192a4d1a516  gpl
+	loaded_at 2026-06-25T04:10:57+0000  uid 0
+	xlated 440B  jited 275B  memlock 4096B
+722: cgroup_device  tag c692d192a4d1a516  gpl
+	loaded_at 2026-06-25T04:10:57+0000  uid 0
+	xlated 440B  jited 275B  memlock 4096B
+723: cgroup_device  tag c692d192a4d1a516  gpl
+	loaded_at 2026-06-25T04:10:57+0000  uid 0
+	xlated 440B  jited 275B  memlock 4096B
+724: cgroup_device  tag c692d192a4d1a516  gpl
+	loaded_at 2026-06-25T04:10:57+0000  uid 0
+	xlated 440B  jited 275B  memlock 4096B
+725: cgroup_device  tag c692d192a4d1a516  gpl
+	loaded_at 2026-06-25T04:10:57+0000  uid 0
+	xlated 440B  jited 275B  memlock 4096B
+726: cgroup_device  tag c692d192a4d1a516  gpl
+	loaded_at 2026-06-25T04:10:57+0000  uid 0
+	xlated 440B  jited 275B  memlock 4096B
+727: cgroup_device  tag 8b9c33f36f812014  gpl
+	loaded_at 2026-06-25T04:10:57+0000  uid 0
+	xlated 744B  jited 451B  memlock 4096B
+728: cgroup_skb  tag 6deef7357e7b4530  gpl
+	loaded_at 2026-06-25T04:10:57+0000  uid 0
+	xlated 64B  jited 58B  memlock 4096B
+729: cgroup_skb  tag 6deef7357e7b4530  gpl
+	loaded_at 2026-06-25T04:10:57+0000  uid 0
+	xlated 64B  jited 58B  memlock 4096B
+731: cgroup_device  tag c692d192a4d1a516  gpl
+	loaded_at 2026-06-25T04:10:57+0000  uid 0
+	xlated 440B  jited 275B  memlock 4096B
+732: cgroup_device  tag c692d192a4d1a516  gpl
+	loaded_at 2026-06-25T04:10:57+0000  uid 0
+	xlated 440B  jited 275B  memlock 4096B
+734: cgroup_device  tag e3dbd137be8d6168  gpl
+	loaded_at 2026-06-25T04:10:57+0000  uid 0
+	xlated 504B  jited 313B  memlock 4096B
+736: cgroup_device  tag c692d192a4d1a516  gpl
+	loaded_at 2026-06-25T04:10:57+0000  uid 0
+	xlated 440B  jited 275B  memlock 4096B
+737: cgroup_device  tag c692d192a4d1a516  gpl
+	loaded_at 2026-06-25T04:10:57+0000  uid 0
+	xlated 440B  jited 275B  memlock 4096B
+738: cgroup_device  tag c692d192a4d1a516  gpl
+	loaded_at 2026-06-25T04:10:57+0000  uid 0
+	xlated 440B  jited 275B  memlock 4096B
+740: cgroup_device  tag c692d192a4d1a516  gpl
+	loaded_at 2026-06-25T04:10:57+0000  uid 0
+	xlated 440B  jited 275B  memlock 4096B
+743: cgroup_device  tag 3918c82a5f4c0360
+	loaded_at 2026-06-25T04:10:57+0000  uid 0
+	xlated 64B  jited 44B  memlock 4096B
+744: cgroup_device  tag 3b0b81b071f088cd  gpl
+	loaded_at 2026-06-25T04:10:58+0000  uid 0
+	xlated 440B  jited 275B  memlock 4096B
+748: cgroup_device  tag 531db05b114e9af3
+	loaded_at 2026-06-25T04:10:58+0000  uid 0
+	xlated 512B  jited 332B  memlock 4096B
+749: cgroup_device  tag 3b0b81b071f088cd  gpl
+	loaded_at 2026-06-25T04:10:58+0000  uid 0
+	xlated 440B  jited 275B  memlock 4096B
+753: cgroup_device  tag 531db05b114e9af3
+	loaded_at 2026-06-25T04:10:58+0000  uid 0
+	xlated 512B  jited 332B  memlock 4096B
+756: cgroup_device  tag 3918c82a5f4c0360
+	loaded_at 2026-06-25T04:10:58+0000  uid 0
+	xlated 64B  jited 44B  memlock 4096B
+938: cgroup_device  tag 3b0b81b071f088cd  gpl
+	loaded_at 2026-06-25T09:38:41+0000  uid 0
+	xlated 440B  jited 275B  memlock 4096B
+942: cgroup_device  tag 531db05b114e9af3
+	loaded_at 2026-06-25T09:38:41+0000  uid 0
+	xlated 512B  jited 332B  memlock 4096B
+945: cgroup_device  tag 3918c82a5f4c0360
+	loaded_at 2026-06-25T09:38:43+0000  uid 0
+	xlated 64B  jited 44B  memlock 4096B
+1753: cgroup_device  tag 3b0b81b071f088cd  gpl
+	loaded_at 2026-06-25T16:10:04+0000  uid 0
+	xlated 440B  jited 275B  memlock 4096B
+1757: cgroup_device  tag 531db05b114e9af3
+	loaded_at 2026-06-25T16:10:04+0000  uid 0
+	xlated 512B  jited 332B  memlock 4096B
+1760: cgroup_device  tag 3918c82a5f4c0360
+	loaded_at 2026-06-25T16:10:04+0000  uid 0
+	xlated 64B  jited 44B  memlock 4096B
+1761: cgroup_device  tag 3b0b81b071f088cd  gpl
+	loaded_at 2026-06-25T16:10:32+0000  uid 0
+	xlated 440B  jited 275B  memlock 4096B
+1765: cgroup_device  tag 531db05b114e9af3
+	loaded_at 2026-06-25T16:10:32+0000  uid 0
+	xlated 512B  jited 332B  memlock 4096B
+1766: cgroup_device  tag 3b0b81b071f088cd  gpl
+	loaded_at 2026-06-25T16:10:32+0000  uid 0
+	xlated 440B  jited 275B  memlock 4096B
+1770: cgroup_device  tag 531db05b114e9af3
+	loaded_at 2026-06-25T16:10:32+0000  uid 0
+	xlated 512B  jited 332B  memlock 4096B

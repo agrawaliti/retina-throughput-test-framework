@@ -1,0 +1,46 @@
+Starting ringbuf benchmark and capture run: 20260625T160102Z
+1/2: starting perf + bpftool telemetry capture
+2/2: running ringbuf benchmark
+run_id=20260625T160104Z
+baseline_json={
+  "tag": "baseline",
+  "pods": 4,
+  "total_bits_per_second": 14792268587.413393,
+  "total_gbps": 14.792268587413393,
+  "total_bytes_sent": 18496815104,
+  "total_connect_errors": 0,
+  "total_write_errors": 0
+}
+with_retina_json={
+  "tag": "with_retina",
+  "pods": 4,
+  "total_bits_per_second": 15321021767.491787,
+  "total_gbps": 15.321021767491787,
+  "total_bytes_sent": 19157155840,
+  "total_connect_errors": 0,
+  "total_write_errors": 0
+}
+baseline_gbps=14.79
+with_retina_gbps=15.32
+overhead_pct=-3.6
+=== capture starting ===
+perf (via chroot): /usr/lib/linux-tools/5.15.0-1114-azure/perf
+bpftool (via chroot): /usr/sbin/bpftool
+0 added, 0 removed; done.
+Running hooks in /etc/ca-certificates/update.d...
+done.
+stackcollapse-perf.pl: /usr/local/bin/stackcollapse-perf.pl
+flamegraph.pl: /usr/local/bin/flamegraph.pl
+starting perf record (30s) ...
+waiting for perf to finish ...
+perf exit code: 1
+WARNING: perf.data missing or empty
+--- perf.record.err.txt ---
+failed to open /tmp/ringbuf-perf-20260625T160116Z.data : Read-only file system
+Perf session creation failed.
+--- end perf.record.err.txt ---
+WARNING: skipping flamegraph (tools missing or perf.script.txt missing)
+copying results to host ...
+leaving pod alive briefly for kubectl cp ...
+=== capture complete: /host-capture/20260625T160116Z ===
+Ringbuf capture complete. Benchmark results: /home/itiagrawal/Projects/iperf3-test/results/ringbuf_capture/ringbuf_benchmark

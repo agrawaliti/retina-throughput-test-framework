@@ -1,0 +1,9 @@
+=== capture starting ===
+perf: /host-usr-lib/linux-tools/5.15.0-1114-azure/perf
+bpftool: /host-sbin/bpftool
+Building dependency tree...
+Reading state information...
+E: Unable to locate package flamegraph
+stackcollapse-perf.pl: not found
+flamegraph.pl: not found
+starting perf record (30s) ...

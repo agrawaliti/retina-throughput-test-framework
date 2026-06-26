@@ -1,0 +1,7 @@
+test_name,bandwidth,parallel,length,duration,protocol
+p08_b10g_l128k_t30,10000M,8,128K,30,tcp
+p16_b20g_l128k_t30,20000M,16,128K,30,tcp
+p31_b40g_l64k_t30,40000M,31,64K,30,tcp
+p31_b60g_l64k_t30,60000M,31,64K,30,tcp
+p31_b80g_l128k_t30,80000M,31,128K,30,tcp
+p31_b95g_l256k_t30,95000M,31,256K,30,tcp

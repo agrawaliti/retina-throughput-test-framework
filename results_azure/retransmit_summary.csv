@@ -1,0 +1,7 @@
+test_name,target_gbps,achieved_gbps,retransmits,retrans_per_gbps,cpu_percent,results_file
+p01_b05g,5,4.9997951818345205,12860,2572.10,N/A,/home/azureuser/iperf3-test/results/retransmit_analysis/20260624T141413Z_p01_b05g.json
+p01_b10g,10,9.999622982452511,23726,2372.68,N/A,/home/azureuser/iperf3-test/results/retransmit_analysis/20260624T141443Z_p01_b10g.json
+p01_b15g,15,14.344023777154575,20984,1462.90,N/A,/home/azureuser/iperf3-test/results/retransmit_analysis/20260624T141513Z_p01_b15g.json
+p01_b20g,20,12.862143563678725,20481,1592.34,N/A,/home/azureuser/iperf3-test/results/retransmit_analysis/20260624T141543Z_p01_b20g.json
+p01_b25g,25,13.870855697315763,26398,1903.12,N/A,/home/azureuser/iperf3-test/results/retransmit_analysis/20260624T141613Z_p01_b25g.json
+p01_b30g,30,13.26719909719091,19537,1472.57,N/A,/home/azureuser/iperf3-test/results/retransmit_analysis/20260624T141643Z_p01_b30g.json

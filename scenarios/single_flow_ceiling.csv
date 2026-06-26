@@ -1,0 +1,7 @@
+test_name,bandwidth,parallel,length,duration,protocol
+p01_b05g,5000M,1,64K,30,tcp
+p01_b10g,10000M,1,64K,30,tcp
+p01_b15g,15000M,1,64K,30,tcp
+p01_b20g,20000M,1,64K,30,tcp
+p01_b25g,25000M,1,64K,30,tcp
+p01_b30g,30000M,1,64K,30,tcp

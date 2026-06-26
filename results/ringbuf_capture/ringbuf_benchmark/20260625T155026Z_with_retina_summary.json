@@ -1,0 +1,9 @@
+{
+  "tag": "with_retina",
+  "pods": 4,
+  "total_bits_per_second": 0,
+  "total_gbps": 0,
+  "total_bytes_sent": 0,
+  "total_connect_errors": 32,
+  "total_write_errors": 0
+}
