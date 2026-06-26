@@ -1,0 +1,23 @@
+{
+  "run_id": "20260625T132109Z",
+  "run_dir": "results/reuseport_three_modes/20260625T132109Z",
+  "canonical_baseline_gbps": 15.31,
+  "modes": {
+    "baseline": {
+      "gbps": 15.31
+    },
+    "perf_array": {
+      "gbps": 15.02,
+      "drop_vs_canonical_baseline_pct": 1.9,
+      "source_summary_file": "results/reuseport_three_modes/20260625T132109Z/perf_array/20260625T132405Z_summary.txt"
+    },
+    "ringbuf": {
+      "gbps": 15.03,
+      "drop_vs_canonical_baseline_pct": 1.8,
+      "source_summary_file": "results/reuseport_three_modes/20260625T132109Z/ringbuf/20260625T133017Z_summary.txt"
+    }
+  },
+  "notes": {
+    "ringbuf_run_baseline_gbps": 15.15
+  }
+}

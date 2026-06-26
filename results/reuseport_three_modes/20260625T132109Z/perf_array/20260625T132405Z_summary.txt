@@ -1,0 +1,22 @@
+run_id=20260625T132405Z
+baseline_json={
+  "tag": "baseline",
+  "pods": 4,
+  "total_bits_per_second": 15310117849.135775,
+  "total_gbps": 15.310117849135775,
+  "total_bytes_sent": 19143262208,
+  "total_connect_errors": 0,
+  "total_write_errors": 0
+}
+with_retina_json={
+  "tag": "with_retina",
+  "pods": 4,
+  "total_bits_per_second": 15024359431.959034,
+  "total_gbps": 15.024359431959034,
+  "total_bytes_sent": 18785894400,
+  "total_connect_errors": 0,
+  "total_write_errors": 0
+}
+baseline_gbps=15.31
+with_retina_gbps=15.02
+overhead_pct=1.9

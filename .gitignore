@@ -1,0 +1,22 @@
+# Test Results - ignore most, but keep final summaries and flamegraphs
+results/**/*.log
+results/**/perf.data
+results/**/perf.script.txt
+results/**/*clients.jsonl
+results_azure/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+*.log
+
+# Binaries
+*.o
+*.a
+*.so
