@@ -1,9 +1,0 @@
-{
-  "tag": "baseline",
-  "pods": 4,
-  "total_bits_per_second": 15042922182.030758,
-  "total_gbps": 15.042922182030757,
-  "total_bytes_sent": 18807390208,
-  "total_connect_errors": 0,
-  "total_write_errors": 0
-}

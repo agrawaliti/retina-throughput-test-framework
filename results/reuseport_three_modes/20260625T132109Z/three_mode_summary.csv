@@ -1,4 +1,0 @@
-mode,baseline_gbps,retina_gbps,drop_vs_canonical_baseline_pct
-baseline,15.31,15.31,0.0
-perf-array,15.31,15.02,1.9
-ringbuf,15.31,15.03,1.8
