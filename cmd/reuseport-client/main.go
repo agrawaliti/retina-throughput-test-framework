@@ -32,11 +32,18 @@ func main() {
 		connections = flag.Int("connections", 64, "number of long-lived TCP connections")
 		duration    = flag.Duration("duration", 30*time.Second, "run duration")
 		payloadSize = flag.Int("payload-bytes", 64*1024, "bytes written per write call")
+		gomaxprocs  = flag.Int("gomaxprocs", 0, "set GOMAXPROCS before starting traffic; 0 keeps the runtime default")
 	)
 	flag.Parse()
 
 	if *connections <= 0 || *payloadSize <= 0 || *duration <= 0 {
 		panic("connections, duration, and payload-bytes must be > 0")
+	}
+	if *gomaxprocs < 0 {
+		panic("gomaxprocs must be >= 0")
+	}
+	if *gomaxprocs > 0 {
+		runtime.GOMAXPROCS(*gomaxprocs)
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), *duration)

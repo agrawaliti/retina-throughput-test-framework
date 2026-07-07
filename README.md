@@ -54,6 +54,14 @@ sudo apt-get install -y iperf3 netperf ethtool jq
    ./scripts/run_sweep.sh --server-ip <RECEIVER_IP> --scenario scenarios/tcp_sweep.csv
    ```
 
+4. **Run the portable multi-core reuseport benchmark**
+  ```bash
+  ./scripts/run_reuseport_ab.sh --active-cores 32
+  ```
+  This auto-selects two Linux worker nodes, shapes a sustained cross-core workload
+  around 32 active data-plane cores, and writes a profile JSON describing the
+  chosen nodes, flows, listeners, workers, and runtime thread counts.
+
 ## Documentation
 
 - [Overview](docs/00-overview.md) - Framework architecture and concepts
@@ -66,6 +74,93 @@ sudo apt-get install -y iperf3 netperf ethtool jq
 ## Results
 
 Test results are timestamped and stored in the `results/` directory with JSON and CSV formats for easy analysis and plotting.
+
+## Reuseport A/B Benchmark
+
+Use `scripts/run_reuseport_ab.sh` when you want a workload that stresses many RX
+queues and user-space consumers under sustained cross-core traffic instead of a
+single iperf3 flow.
+
+Default shaping rules:
+- Targets `32` active data-plane cores when available
+- Uses `8` long-lived flows per active core
+- Sets receiver listeners to the active-core count
+- Sets receiver workers to `4x` the active-core count
+- Derives client pod count and per-pod connections from the target core count
+
+Useful flags:
+
+```bash
+./scripts/run_reuseport_ab.sh \
+  --node-label agentpool=bench \
+  --active-cores 32 \
+  --flows-per-core 8
+```
+
+If the selected nodes expose fewer than 32 allocatable CPUs, the script scales the
+workload down to the largest portable shape both nodes can sustain and records the
+effective values in the run profile.
+
+## Retina Buffer Mode Comparison (AKS)
+
+This repo also measures Retina packetparser overhead and compares its two
+kernel-to-userspace transfer mechanisms (**perf-array** vs **ring-buffer**) on
+32-core AKS nodes, reproducing the analysis from
+[Who Will Observe the Observability?](https://blog.zmalik.dev/p/who-will-observe-the-observability).
+
+### 1. Provision benchmark cluster(s)
+
+```bash
+# Azure CNI Overlay, 2x Standard_D32s_v3 benchmark nodes (taint workload=benchmark)
+RESOURCE_GROUP=retina-bench-baseline-rg CLUSTER_NAME=retina-bench-baseline \
+  bash deploy/create_aks_benchmark_cluster.sh
+```
+
+See [deploy/create_aks_benchmark_cluster.sh](deploy/create_aks_benchmark_cluster.sh)
+for all tunables (VM size, node count, network plugin/mode/dataplane).
+
+### 2. Install Retina in Advanced Mode (packetparser + adv_* metrics)
+
+```bash
+VERSION=v1.2.2
+helm upgrade --install retina oci://ghcr.io/microsoft/retina/charts/retina \
+  --version $VERSION --namespace kube-system --create-namespace \
+  --set image.tag=$VERSION --set operator.tag=$VERSION --set image.pullPolicy=Always \
+  --set operator.enabled=true --set operator.enableRetinaEndpoint=true \
+  --set enabledPlugin_linux="\[dropreason\,packetforward\,linuxutil\,dns\,packetparser\]" \
+  --set enablePodLevel=true --set enableAnnotations=true \
+  --set packetParserRingBuffer=enabled            # omit or =disabled for perf-array
+kubectl annotate namespace default retina.sh=observe --overwrite
+```
+
+Advanced metrics appear under the `networkobservability_adv_*` prefix
+(`adv_forward_count`, `adv_forward_bytes`, `adv_tcpflags_count`,
+`adv_node_apiserver_latency`, etc.). Verify with:
+
+```bash
+kubectl get --raw "/api/v1/namespaces/kube-system/pods/<retina-pod>:10093/proxy/metrics" \
+  | grep '^networkobservability_adv_'
+```
+
+### 3. Run the buffer crossover sweep
+
+```bash
+# Sweeps payload sizes across a perf-array cluster and a ring-buffer cluster,
+# comparing receiver-side median throughput + Retina CPU + connection errors.
+PAYLOAD_SIZES="512 1024 2048 4096 8192 16384" CONNECTIONS=165 DURATION=120s \
+  ./scripts/run_buffer_crossover_sweep.sh
+```
+
+Results are written to `results/buffer_crossover/<id>_sweep_summary.csv`. See
+[scripts/run_buffer_crossover_sweep.sh](scripts/run_buffer_crossover_sweep.sh)
+for the full methodology header.
+
+**Key finding:** packetparser overhead scales with **packets/second**, not
+bandwidth. The synchronous TC-BPF parse runs in RX softirq on every packet, so
+small payloads (high packet rate) incur large overhead while large payloads are
+nearly free. The perf-array vs ring-buffer choice mostly matters when Retina's
+userspace reader is CPU-constrained (throttled), which is the regime the blog
+documented.
 
 ## 3b) Run a Single-Flow Ceiling Test (vmss000001)
 

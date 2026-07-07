@@ -1,6 +1,8 @@
 package main
 
 import (
+	"context"
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -23,6 +25,16 @@ type counters struct {
 	errors   uint64
 }
 
+type receiverResult struct {
+	BytesReceived  uint64  `json:"bytes_received"`
+	BitsPerSecond  float64 `json:"bits_per_second"`
+	GbpsReceived   float64 `json:"gbps_received"`
+	Accepted       uint64  `json:"accepted"`
+	Errors         uint64  `json:"errors"`
+	ElapsedSeconds float64 `json:"elapsed_seconds"`
+	GOMAXPROCS     int     `json:"gomaxprocs"`
+}
+
 func main() {
 	var (
 		listenAddr = flag.String("listen-addr", ":9000", "listen address")
@@ -30,11 +42,18 @@ func main() {
 		workers    = flag.Int("workers", runtime.NumCPU()*4, "number of connection workers")
 		bufSize    = flag.Int("buffer-size", 64*1024, "per-connection read buffer bytes")
 		report     = flag.Duration("report-interval", 5*time.Second, "stats report interval")
+		gomaxprocs = flag.Int("gomaxprocs", 0, "set GOMAXPROCS before accepting traffic; 0 keeps the runtime default")
 	)
 	flag.Parse()
 
 	if *listeners <= 0 || *workers <= 0 || *bufSize <= 0 {
 		log.Fatal("listeners, workers, and buffer-size must be > 0")
+	}
+	if *gomaxprocs < 0 {
+		log.Fatal("gomaxprocs must be >= 0")
+	}
+	if *gomaxprocs > 0 {
+		runtime.GOMAXPROCS(*gomaxprocs)
 	}
 
 	log.Printf("starting reuseport receiver addr=%s listeners=%d workers=%d gomaxprocs=%d", *listenAddr, *listeners, *workers, runtime.GOMAXPROCS(0))
@@ -87,7 +106,7 @@ func main() {
 
 	listenersList := make([]net.Listener, 0, *listeners)
 	for listenerID := 0; listenerID < *listeners; listenerID++ {
-		ln, err := lc.Listen(nil, "tcp", *listenAddr)
+		ln, err := lc.Listen(context.TODO(), "tcp", *listenAddr)
 		if err != nil {
 			log.Fatalf("listen %d/%d failed: %v", listenerID+1, *listeners, err)
 		}
@@ -112,6 +131,21 @@ func main() {
 			}
 			close(conns)
 			workerWG.Wait()
+
+			elapsed := time.Since(started).Seconds()
+			totalBytes := atomic.LoadUint64(&stats.bytes)
+			bps := float64(totalBytes*8) / elapsed
+			res := receiverResult{
+				BytesReceived:  totalBytes,
+				BitsPerSecond:  bps,
+				GbpsReceived:   bps / 1e9,
+				Accepted:       atomic.LoadUint64(&stats.accepted),
+				Errors:         atomic.LoadUint64(&stats.errors),
+				ElapsedSeconds: elapsed,
+				GOMAXPROCS:     runtime.GOMAXPROCS(0),
+			}
+			out, _ := json.Marshal(res)
+			fmt.Println(string(out))
 			return
 		case <-ticker.C:
 			totalBytes := atomic.LoadUint64(&stats.bytes)

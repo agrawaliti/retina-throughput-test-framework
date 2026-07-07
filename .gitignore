@@ -20,3 +20,7 @@ results_azure/
 *.o
 *.a
 *.so
+
+# Compiled Go benchmark binaries
+/reuseport-client
+/reuseport-receiver

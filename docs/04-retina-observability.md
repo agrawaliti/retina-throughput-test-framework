@@ -28,6 +28,7 @@ helm upgrade --install retina oci://ghcr.io/microsoft/retina/charts/retina \
     --set image.tag=$VERSION \
     --set operator.tag=$VERSION \
     --set logLevel=info \
+    --set enablePodLevel=true 
     --set operator.enabled=true \
     --set enabledPlugin_linux="\[dropreason\,packetforward\,linuxutil\,dns\,packetparser\]"
 ```
