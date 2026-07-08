@@ -47,7 +47,7 @@ PAYLOAD_SIZES=(${PAYLOAD_SIZES:-1024 8192 65536})
 # Retina OSS install (advanced mode). Overridable if a different chart is used.
 RETINA_NS="kube-system"
 RETINA_CHART="${RETINA_CHART:-oci://ghcr.io/microsoft/retina/charts/retina}"
-RETINA_VERSION="${RETINA_VERSION:-v0.0.30}"
+RETINA_VERSION="${RETINA_VERSION:-v1.2.2}"
 RETINA_CONFIGMAP="retina-config"
 RETINA_DS="retina-agent"
 RB_SIZE="${RB_SIZE:-8388608}"
@@ -60,6 +60,20 @@ echo "payload_bytes,connections,noretina_gbps,perf_array_gbps,ring_buffer_gbps,w
 
 log() { printf '[%s] %s\n' "$(date -u +%H:%M:%S)" "$*"; }
 
+# Retry a command up to 6x (tolerate transient API-server blips to the SEA region).
+kretry() { local i; for i in 1 2 3 4 5 6; do "$@" && return 0; sleep 5; done; return 1; }
+
+# Resolve the Nth benchmark node name, retrying through transient API errors.
+get_bench_node() {
+  local idx="$1" i n
+  for i in 1 2 3 4 5 6; do
+    n="$(kubectl --context "$CTX" get nodes -l 'workload=benchmark,kubernetes.io/os=linux' -o jsonpath="{.items[${idx}].metadata.name}" 2>/dev/null || true)"
+    [[ -n "$n" ]] && { printf '%s' "$n"; return 0; }
+    sleep 5
+  done
+  printf ''
+}
+
 # ---------------------------------------------------------------------------
 # run_workload: create receiver pod + sender Job, measure median receiver Gbps.
 #   $1=payload $2=tag  -> echoes "gbps|retina_cpu|errors"
@@ -70,10 +84,13 @@ run_workload() {
   local job="reuseport-cli-${tag}"
 
   local recv_node sender_node
-  recv_node="$(kubectl --context "$CTX" get nodes -l 'workload=benchmark,kubernetes.io/os=linux' -o jsonpath='{.items[0].metadata.name}')"
-  sender_node="$(kubectl --context "$CTX" get nodes -l 'workload=benchmark,kubernetes.io/os=linux' -o jsonpath='{.items[1].metadata.name}')"
-  kubectl --context "$CTX" label node "$recv_node" perf-role32=receiver --overwrite >/dev/null
-  kubectl --context "$CTX" label node "$sender_node" perf-role32=sender --overwrite >/dev/null
+  recv_node="$(get_bench_node 0)"
+  sender_node="$(get_bench_node 1)"
+  if [[ -z "$recv_node" || -z "$sender_node" ]]; then
+    echo "0|NA|0"; return
+  fi
+  kretry kubectl --context "$CTX" label node "$recv_node" perf-role32=receiver --overwrite >/dev/null
+  kretry kubectl --context "$CTX" label node "$sender_node" perf-role32=sender --overwrite >/dev/null
 
   kubectl --context "$CTX" -n "$NAMESPACE" create configmap "$SRC_CONFIGMAP" \
     --from-file=go.mod=go.mod \
@@ -126,9 +143,13 @@ spec:
     emptyDir: {}
 POD
 
-  kubectl --context "$CTX" wait --for=condition=Ready "pod/${server}" --timeout=300s >/dev/null
-  local target_ip
-  target_ip="$(kubectl --context "$CTX" get pod "$server" -o jsonpath='{.status.podIP}')"
+  kretry kubectl --context "$CTX" wait --for=condition=Ready "pod/${server}" --timeout=300s >/dev/null
+  local target_ip="" ti
+  for ti in 1 2 3 4 5 6; do
+    target_ip="$(kubectl --context "$CTX" get pod "$server" -o jsonpath='{.status.podIP}' 2>/dev/null || true)"
+    [[ -n "$target_ip" ]] && break
+    sleep 5
+  done
 
   cat <<JOB | kubectl --context "$CTX" create -f - >/dev/null
 apiVersion: batch/v1
@@ -184,14 +205,21 @@ JOB
   cpu2="$(kubectl --context "$CTX" top pods -n "$RETINA_NS" -l app.kubernetes.io/name=retina --no-headers 2>/dev/null | awk 'NR>0{gsub("m","",$2); if($2>max)max=$2} END{print max+0}')"
   retina_cpu="$(awk -v a="${cpu1:-0}" -v b="${cpu2:-0}" 'BEGIN{print (a>b?a:b)"m"}')"
 
-  kubectl --context "$CTX" wait --for=condition=complete "job/${job}" --timeout=900s >/dev/null
+  kretry kubectl --context "$CTX" wait --for=condition=complete "job/${job}" --timeout=900s >/dev/null
 
-  local recv_gbps errors
-  recv_gbps="$(kubectl --context "$CTX" logs "$server" --tail=120 \
+  # Fetch receiver logs with retry (SEA API is flaky; a failed fetch must not
+  # be mis-recorded as 0 Gbps).
+  local recv_gbps errors logs="" li
+  for li in 1 2 3 4 5 6; do
+    logs="$(kubectl --context "$CTX" logs "$server" --tail=120 2>/dev/null || true)"
+    printf '%s' "$logs" | grep -q 'interval_gbps=' && break
+    sleep 5
+  done
+  recv_gbps="$(printf '%s\n' "$logs" \
     | grep -oE 'interval_gbps=[0-9.]+' | cut -d= -f2 \
     | awk '$1>0.05' | sort -n \
     | awk '{a[NR]=$1} END{ if(NR==0){print 0} else if(NR%2){printf "%.2f", a[(NR+1)/2]} else {printf "%.2f", (a[NR/2]+a[NR/2+1])/2} }')"
-  errors="$(kubectl --context "$CTX" logs "$server" --tail=120 | grep -oE 'errors=[0-9]+' | cut -d= -f2 | sort -rn | head -1)"
+  errors="$(printf '%s\n' "$logs" | grep -oE 'errors=[0-9]+' | cut -d= -f2 | sort -rn | head -1)"
 
   kubectl --context "$CTX" delete pod "$server" --ignore-not-found >/dev/null 2>&1 || true
   kubectl --context "$CTX" delete job "$job" --ignore-not-found >/dev/null 2>&1 || true
@@ -233,34 +261,54 @@ verify_ringbuf_init() {
 
 install_retina_perf_array() {
   log "Installing Retina (advanced, perf-array: packetParserRingBuffer disabled)..."
-  helm --kube-context "$CTX" upgrade --install retina "$RETINA_CHART" \
-    --version "$RETINA_VERSION" \
-    --namespace "$RETINA_NS" \
-    --set enablePodLevel=true \
-    --set enableAnnotations=true \
-    --set-string dataAggregationLevel=low \
-    --set 'enabledPlugin_linux={dropreason,packetforward,linuxutil,dns,packetparser}' \
-    --set-string packetParserRingBuffer=disabled \
-    --set packetParserRingBufferSize="$RB_SIZE" \
-    --wait --timeout 5m >/dev/null
-  kubectl --context "$CTX" -n "$RETINA_NS" rollout status ds/"$RETINA_DS" --timeout=300s >/dev/null
+  # enabledPlugin_linux must be a STRING for the v1.2.2 chart; use a values file.
+  local vals; vals="$(mktemp)"
+  cat > "$vals" <<EOF
+enablePodLevel: true
+enableAnnotations: true
+enabledPlugin_linux: '[dropreason,packetforward,linuxutil,dns,packetparser]'
+packetParserRingBuffer: disabled
+logLevel: info
+image:
+  tag: ${RETINA_VERSION}
+  pullPolicy: Always
+operator:
+  enabled: true
+  enableRetinaEndpoint: true
+  tag: ${RETINA_VERSION}
+EOF
+  kretry helm --kube-context "$CTX" upgrade --install retina "$RETINA_CHART" \
+    --version "$RETINA_VERSION" --namespace "$RETINA_NS" \
+    -f "$vals" --wait --timeout 6m >/dev/null
+  rm -f "$vals"
+  # The bench nodes carry workload=benchmark:NoSchedule; the agent DaemonSet must
+  # tolerate it to attach packetparser on the receiver/sender nodes (else it only
+  # runs on the system node and measures nothing).
+  kretry kubectl --context "$CTX" -n "$RETINA_NS" patch ds "$RETINA_DS" --type merge \
+    -p '{"spec":{"template":{"spec":{"tolerations":[{"key":"workload","operator":"Equal","value":"benchmark","effect":"NoSchedule"}]}}}}' >/dev/null
+  kretry kubectl --context "$CTX" -n "$RETINA_NS" rollout status ds/"$RETINA_DS" --timeout=300s >/dev/null
   sleep 15
 }
 
 set_ringbuf() {
   local value="$1"   # enabled|disabled
-  local tmp; tmp="$(mktemp)"
-  kubectl --context "$CTX" -n "$RETINA_NS" get cm "$RETINA_CONFIGMAP" -o jsonpath='{.data.config\.yaml}' > "$tmp"
+  local tmp cfg="" i
+  for i in 1 2 3 4 5 6; do
+    cfg="$(kubectl --context "$CTX" -n "$RETINA_NS" get cm "$RETINA_CONFIGMAP" -o jsonpath='{.data.config\.yaml}' 2>/dev/null || true)"
+    [[ -n "$cfg" ]] && break
+    sleep 5
+  done
+  tmp="$(mktemp)"; printf '%s' "$cfg" > "$tmp"
   if grep -q '^packetParserRingBuffer:' "$tmp"; then
     sed -i -E "s/^packetParserRingBuffer:.*/packetParserRingBuffer: ${value}/" "$tmp"
   else
     echo "packetParserRingBuffer: ${value}" >> "$tmp"
   fi
-  kubectl --context "$CTX" -n "$RETINA_NS" create cm "$RETINA_CONFIGMAP" --from-file=config.yaml="$tmp" -o yaml --dry-run=client \
-    | kubectl --context "$CTX" apply -f - >/dev/null
+  apply_cm() { kubectl --context "$CTX" -n "$RETINA_NS" create cm "$RETINA_CONFIGMAP" --from-file=config.yaml="$tmp" -o yaml --dry-run=client | kubectl --context "$CTX" apply -f - ; }
+  kretry apply_cm >/dev/null
   rm -f "$tmp"
-  kubectl --context "$CTX" -n "$RETINA_NS" rollout restart ds/"$RETINA_DS" >/dev/null
-  kubectl --context "$CTX" -n "$RETINA_NS" rollout status ds/"$RETINA_DS" --timeout=300s >/dev/null
+  kretry kubectl --context "$CTX" -n "$RETINA_NS" rollout restart ds/"$RETINA_DS" >/dev/null
+  kretry kubectl --context "$CTX" -n "$RETINA_NS" rollout status ds/"$RETINA_DS" --timeout=300s >/dev/null
   sleep 15
 }
 
@@ -273,26 +321,38 @@ echo ""
 declare -A A_GBPS B_GBPS C_GBPS B_CPU C_CPU
 
 # ---- Phase A: baseline (no Retina) ----
-if helm --kube-context "$CTX" status retina -n "$RETINA_NS" >/dev/null 2>&1; then
+if [[ "${SKIP_B:-0}" != "1" ]] && helm --kube-context "$CTX" status retina -n "$RETINA_NS" >/dev/null 2>&1; then
   log "Retina present; uninstalling for a clean baseline (Phase A)..."
   helm --kube-context "$CTX" uninstall retina -n "$RETINA_NS" --wait --timeout 3m >/dev/null 2>&1 || true
   sleep 10
 fi
 log "=== Phase A: baseline (no Retina) ==="
-for p in "${PAYLOAD_SIZES[@]}"; do
-  r="$(run_workload "$p" "a${p}")"; A_GBPS[$p]="${r%%|*}"
-  log "  A payload=${p} -> ${A_GBPS[$p]} Gbps"
-done
+if [[ "${SKIP_A:-0}" == "1" ]]; then
+  A_GBPS[1024]="${A_1024:-0}"; A_GBPS[8192]="${A_8192:-0}"; A_GBPS[65536]="${A_65536:-0}"
+  log "  Phase A skipped; seeded baseline 1024=${A_GBPS[1024]} 8192=${A_GBPS[8192]} 65536=${A_GBPS[65536]} Gbps"
+else
+  for p in "${PAYLOAD_SIZES[@]}"; do
+    r="$(run_workload "$p" "a${p}")"; A_GBPS[$p]="${r%%|*}"
+    log "  A payload=${p} -> ${A_GBPS[$p]} Gbps"
+  done
+fi
 
 # ---- Phase B: perf-array ----
-install_retina_perf_array
-B_METRICS="$(verify_metrics)"
-B_RB_INIT="$(verify_ringbuf_init)"   # expect "no" for perf-array
-log "=== Phase B: perf-array (metrics_ok=${B_METRICS}, ringbuf_init=${B_RB_INIT}) ==="
-for p in "${PAYLOAD_SIZES[@]}"; do
-  r="$(run_workload "$p" "b${p}")"; B_GBPS[$p]="${r%%|*}"; B_CPU[$p]="$(echo "$r" | cut -d'|' -f2)"
-  log "  B payload=${p} -> ${B_GBPS[$p]} Gbps (cpu ${B_CPU[$p]})"
-done
+if [[ "${SKIP_B:-0}" == "1" ]]; then
+  B_GBPS[1024]="${B_1024:-0}"; B_GBPS[8192]="${B_8192:-0}"; B_GBPS[65536]="${B_65536:-0}"
+  B_CPU[1024]="${B_CPU_1024:-NA}"; B_CPU[8192]="${B_CPU_8192:-NA}"; B_CPU[65536]="${B_CPU_65536:-NA}"
+  B_METRICS="yes"; B_RB_INIT="no"
+  log "=== Phase B: perf-array SKIPPED; seeded 1024=${B_GBPS[1024]} 8192=${B_GBPS[8192]} 65536=${B_GBPS[65536]} Gbps ==="
+else
+  install_retina_perf_array
+  B_METRICS="$(verify_metrics)"
+  B_RB_INIT="$(verify_ringbuf_init)"   # expect "no" for perf-array
+  log "=== Phase B: perf-array (metrics_ok=${B_METRICS}, ringbuf_init=${B_RB_INIT}) ==="
+  for p in "${PAYLOAD_SIZES[@]}"; do
+    r="$(run_workload "$p" "b${p}")"; B_GBPS[$p]="${r%%|*}"; B_CPU[$p]="$(echo "$r" | cut -d'|' -f2)"
+    log "  B payload=${p} -> ${B_GBPS[$p]} Gbps (cpu ${B_CPU[$p]})"
+  done
+fi
 
 # ---- Phase C: ring-buffer ----
 set_ringbuf enabled
