@@ -1,0 +1,8 @@
+payload_bytes,connections,perf_array_gbps,ring_buffer_gbps,winner,perf_retina_cpu,ring_retina_cpu,perf_conn_errors,ring_conn_errors
+512,165,0.74,0.60,perf-array,6m,39m,1855,1855
+1024,165,0.79,1.58,ring-buffer,42m,5m,1855,1855
+2048,165,1.70,2.12,ring-buffer,45m,40m,1855,1855
+4096,165,2.89,3.49,ring-buffer,44m,43m,1855,1855
+8192,165,5.06,7.10,ring-buffer,823m,4337m,1855,1855
+16384,165,10.93,14.77,ring-buffer,7m,45m,1855,1855
+65536,165,14.77,14.75,tie,40m,8m,1855,1855

@@ -1,0 +1,4 @@
+payload_bytes,connections,noretina_gbps,perf_array_gbps,ring_buffer_gbps,winner,perf_retina_cpu,ring_retina_cpu,noretina_errors,perf_conn_errors,ring_conn_errors
+1024,165,2.83,0.74,1.00,no-retina,6m,41m,1855,1855,1855
+8192,165,14.77,4.91,7.52,no-retina,4853m,656m,1855,1855,1855
+65536,165,14.80,14.72,14.79,no-retina,46m,4567m,1855,1855,1855
