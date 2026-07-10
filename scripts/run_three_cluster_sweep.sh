@@ -93,8 +93,23 @@ CONNECTIONS="${CONNECTIONS:-165}"
 OUTDIR="results/buffer_crossover"
 mkdir -p "$OUTDIR"
 SWEEP_ID="$(date -u +%Y%m%dT%H%M%SZ)"
+DBGDIR="$OUTDIR/debug/${SWEEP_ID}"
+mkdir -p "$DBGDIR"
 SUMMARY="$OUTDIR/${SWEEP_ID}_three_cluster_summary.csv"
 echo "payload_bytes,connections,noretina_gbps,perf_array_gbps,ring_buffer_gbps,winner,perf_retina_cpu,ring_retina_cpu,noretina_errors,perf_conn_errors,ring_conn_errors" > "$SUMMARY"
+
+# kctl: kubectl with retry+backoff to ride out intermittent AKS API-server
+# i/o timeouts (observed ~15-20% blip rate on these clusters). Passes stdout
+# through so it is safe inside $( ). Returns non-zero only after all retries.
+kctl() {
+  local attempt=1 max=5
+  while :; do
+    kubectl "$@" && return 0
+    [[ $attempt -ge $max ]] && return 1
+    sleep $((attempt * 3))
+    attempt=$((attempt + 1))
+  done
+}
 
 # -----------------------------------------------------------------------------
 # run_one: execute one workload pass on a single cluster.
@@ -108,16 +123,20 @@ run_one() {
   local job="reuseport-cli-${tag}"
 
   local recv_node sender_node
-  recv_node="$(kubectl --context "$ctx" get nodes -l 'workload=benchmark,kubernetes.io/os=linux' -o jsonpath='{.items[0].metadata.name}')"
-  sender_node="$(kubectl --context "$ctx" get nodes -l 'workload=benchmark,kubernetes.io/os=linux' -o jsonpath='{.items[1].metadata.name}')"
-  kubectl --context "$ctx" label node "$recv_node" perf-role32=receiver --overwrite >/dev/null
-  kubectl --context "$ctx" label node "$sender_node" perf-role32=sender --overwrite >/dev/null
+  recv_node="$(kctl --context "$ctx" get nodes -l 'workload=benchmark,kubernetes.io/os=linux' -o jsonpath='{.items[0].metadata.name}')"
+  sender_node="$(kctl --context "$ctx" get nodes -l 'workload=benchmark,kubernetes.io/os=linux' -o jsonpath='{.items[1].metadata.name}')"
+  if [[ -z "$recv_node" || -z "$sender_node" ]]; then
+    echo "run_one $tag: node discovery failed (recv='$recv_node' sender='$sender_node')" >&2
+    return 1
+  fi
+  kctl --context "$ctx" label node "$recv_node" perf-role32=receiver --overwrite >/dev/null
+  kctl --context "$ctx" label node "$sender_node" perf-role32=sender --overwrite >/dev/null
 
   kubectl --context "$ctx" -n "$NAMESPACE" create configmap "$SRC_CONFIGMAP" \
     --from-file=go.mod=go.mod \
     --from-file=reuseport-receiver.go=cmd/reuseport-receiver/main.go \
     --from-file=reuseport-client.go=cmd/reuseport-client/main.go \
-    --dry-run=client -o yaml | kubectl --context "$ctx" apply -f - >/dev/null
+    --dry-run=client -o yaml | kctl --context "$ctx" apply -f - >/dev/null
 
   kubectl --context "$ctx" delete pod "$server" --ignore-not-found >/dev/null 2>&1 || true
   kubectl --context "$ctx" delete job "$job" --ignore-not-found >/dev/null 2>&1 || true
@@ -164,9 +183,13 @@ spec:
     emptyDir: {}
 POD
 
-  kubectl --context "$ctx" wait --for=condition=Ready "pod/${server}" --timeout=240s >/dev/null
+  kctl --context "$ctx" wait --for=condition=Ready "pod/${server}" --timeout=300s >/dev/null
   local target_ip
-  target_ip="$(kubectl --context "$ctx" get pod "$server" -o jsonpath='{.status.podIP}')"
+  target_ip="$(kctl --context "$ctx" get pod "$server" -o jsonpath='{.status.podIP}')"
+  if [[ -z "$target_ip" ]]; then
+    echo "run_one $tag: empty target_ip after wait" >&2
+    return 1
+  fi
 
   cat <<JOB | kubectl --context "$ctx" create -f - >/dev/null
 apiVersion: batch/v1
@@ -223,20 +246,47 @@ JOB
   cpu2="$(kubectl --context "$ctx" top pods -n kube-system -l app.kubernetes.io/name=retina --no-headers 2>/dev/null | awk 'NR>0{gsub("m","",$2); if($2>max)max=$2} END{print max+0}')"
   retina_cpu="$(awk -v a="${cpu1:-0}" -v b="${cpu2:-0}" 'BEGIN{print (a>b?a:b)"m"}')"
 
-  kubectl --context "$ctx" wait --for=condition=complete "job/${job}" --timeout=600s >/dev/null
+  kctl --context "$ctx" wait --for=condition=complete "job/${job}" --timeout=600s >/dev/null
 
   # Receiver-side throughput: MEDIAN of non-zero interval_gbps windows.
   local recv_gbps errors
-  recv_gbps="$(kubectl --context "$ctx" logs "$server" --tail=80 \
+  recv_gbps="$(kctl --context "$ctx" logs "$server" --tail=80 \
     | grep -oE 'interval_gbps=[0-9.]+' | cut -d= -f2 \
     | awk '$1>0.05' | sort -n \
     | awk '{a[NR]=$1} END{ if(NR==0){print 0} else if(NR%2){printf "%.2f", a[(NR+1)/2]} else {printf "%.2f", (a[NR/2]+a[NR/2+1])/2} }')"
-  errors="$(kubectl --context "$ctx" logs "$server" --tail=80 | grep -oE 'errors=[0-9]+' | cut -d= -f2 | sort -rn | head -1)"
+  errors="$(kctl --context "$ctx" logs "$server" --tail=80 | grep -oE 'errors=[0-9]+' | cut -d= -f2 | sort -rn | head -1)"
+
+  # A 0/empty median means no throughput windows were captured = measurement
+  # failure (usually an API blip), NOT a real zero. Treat as failure so the
+  # payload row is retried/skipped instead of polluting stats with a false 0.
+  if [[ -z "$recv_gbps" || "$recv_gbps" == "0" || "$recv_gbps" == "0.00" ]]; then
+    echo "run_one $tag: recv_gbps='$recv_gbps' (measurement failure)" >&2
+    kubectl --context "$ctx" delete pod "$server" --ignore-not-found >/dev/null 2>&1 || true
+    kubectl --context "$ctx" delete job "$job" --ignore-not-found >/dev/null 2>&1 || true
+    return 1
+  fi
 
   kubectl --context "$ctx" delete pod "$server" --ignore-not-found >/dev/null 2>&1 || true
   kubectl --context "$ctx" delete job "$job" --ignore-not-found >/dev/null 2>&1 || true
 
   echo "${recv_gbps:-0}|${retina_cpu:-NA}|${errors:-0}"
+}
+
+# run_one_retry: run run_one, capturing stderr to a per-tag debug log. If it
+# produces no result (a set -e failure inside run_one left the output empty),
+# force-clean this tag's pods/job and retry exactly once. Never aborts the
+# caller; an empty output file signals a hard failure to the payload loop.
+run_one_retry() {
+  local ctx="$1" payload="$2" conns="$3" tag="$4" out="$5"
+  local errlog="$DBGDIR/${tag}.err"
+  run_one "$ctx" "$payload" "$conns" "$tag" > "$out" 2>"$errlog" || true
+  if [[ ! -s "$out" ]]; then
+    echo "--- attempt 1 failed, retrying $tag ---" >> "$errlog"
+    kubectl --context "$ctx" delete pod "reuseport-recv-${tag}" --force --grace-period=0 --ignore-not-found >/dev/null 2>&1 || true
+    kubectl --context "$ctx" delete job "reuseport-cli-${tag}" --ignore-not-found >/dev/null 2>&1 || true
+    sleep 5
+    run_one "$ctx" "$payload" "$conns" "$tag" > "$out" 2>>"$errlog" || true
+  fi
 }
 
 echo "3-cluster sweep ${SWEEP_ID}"
@@ -253,20 +303,31 @@ trap 'rm -rf "$TMPDIR"' EXIT
 for payload in "${PAYLOAD_SIZES[@]}"; do
   echo "=== Payload ${payload} bytes — launching all 3 clusters simultaneously ==="
 
-  run_one "$NORETINA_CTX" "$payload" "$CONNECTIONS" "nr${payload}" > "$TMPDIR/nr" 2>/dev/null &
+  run_one_retry "$NORETINA_CTX" "$payload" "$CONNECTIONS" "nr${payload}" "$TMPDIR/nr" &
   pid_nr=$!
-  run_one "$PERF_CTX"     "$payload" "$CONNECTIONS" "pf${payload}" > "$TMPDIR/pf" 2>/dev/null &
+  run_one_retry "$PERF_CTX"     "$payload" "$CONNECTIONS" "pf${payload}" "$TMPDIR/pf" &
   pid_pf=$!
-  run_one "$RING_CTX"     "$payload" "$CONNECTIONS" "rb${payload}" > "$TMPDIR/rb" 2>/dev/null &
+  run_one_retry "$RING_CTX"     "$payload" "$CONNECTIONS" "rb${payload}" "$TMPDIR/rb" &
   pid_rb=$!
 
   wait "$pid_nr" || true
   wait "$pid_pf" || true
   wait "$pid_rb" || true
 
-  IFS='|' read -r nr_gbps nr_cpu nr_err   < "$TMPDIR/nr"
-  IFS='|' read -r pf_gbps pf_cpu pf_err   < "$TMPDIR/pf"
-  IFS='|' read -r rb_gbps rb_cpu rb_err   < "$TMPDIR/rb"
+  # Tolerant parse: an empty file = that cluster's run failed even after retry.
+  # Skip the whole payload row (don't pollute stats with zeros) and continue.
+  nr_line="$(cat "$TMPDIR/nr" 2>/dev/null || true)"
+  pf_line="$(cat "$TMPDIR/pf" 2>/dev/null || true)"
+  rb_line="$(cat "$TMPDIR/rb" 2>/dev/null || true)"
+  IFS='|' read -r nr_gbps nr_cpu nr_err <<<"$nr_line" || true
+  IFS='|' read -r pf_gbps pf_cpu pf_err <<<"$pf_line" || true
+  IFS='|' read -r rb_gbps rb_cpu rb_err <<<"$rb_line" || true
+
+  if [[ -z "$nr_line" || -z "$pf_line" || -z "$rb_line" ]]; then
+    echo "  WARN payload ${payload} SKIPPED (cluster failure) nr='${nr_line}' pf='${pf_line}' rb='${rb_line}' -- see $DBGDIR/*.err"
+    echo ""
+    continue
+  fi
 
   winner="$(awk -v n="${nr_gbps:-0}" -v p="${pf_gbps:-0}" -v r="${rb_gbps:-0}" 'BEGIN {
     max=n; w="no-retina";
